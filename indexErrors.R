@@ -71,22 +71,25 @@ createMeansList <- function(data, number_of_indices) {
 measureError = 10
 levels = 4
 
-studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = levels)
-validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = levels )
+numTrials = 10
 
-# per cohort base result vector
-betas <- vector("numeric")
-std_errs <- vector("numeric")
+betas <- vector("numeric", length = numTrials)
+std_errs <- vector("numeric", length = numTrials)
 
-validation_means = createMeansList(validation_data, levels)
+for (i in 1:numTrials) {
+    studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = levels)
+    validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = levels )
 
-# find our estimated beta using the index_means
-studyData$ind_mean <- unlist(lapply(X=studyData$index, FUN=function(index_val){
-    output =  validation_means[index_val]
-    }))
-reg_ind_mean <- lm(formula=C~ind_mean, data=studyData)
-estimated_beta = reg_ind_mean$coefficients['ind_mean']
-standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
+    validation_means = createMeansList(validation_data, levels)
 
-betas = c(betas, estimated_beta)
-std_errs = c(std_errs, standardError_reg_ind)
+    # find our estimated beta using the index_means
+    studyData$ind_mean <- unlist(lapply(X=studyData$index, FUN=function(index_val){
+        output =  validation_means[index_val]
+        }))
+    reg_ind_mean <- lm(formula=C~ind_mean, data=studyData)
+    estimated_beta = reg_ind_mean$coefficients['ind_mean']
+    standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
+
+    betas[i] = estimated_beta
+    std_errs[i] = standardError_reg_ind
+}
