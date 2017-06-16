@@ -25,7 +25,7 @@ constant = 0
 
 study_size = 10000
 rawMean = 50
-rawStdDev = 20
+rawStdDev = 15
 
 # Simple creation of the raw data and the related condition C without error
 rawData = data.frame(paee = rnorm(n = study_size, mean = rawMean, sd = rawStdDev))
@@ -36,28 +36,33 @@ rawData$C = (trueBeta*rawData$paee) + constant
 ###############################################################################
 
 createStudyData <- function(raw_data, measurement_error, number_of_indices){
-	paee_errors = rnorm(n = study_size, mean = 0, sd = measurement_error)
-	raw_data$paee_error = raw_data$paee + paee_errors
-	# raw_data$index = cut_number(x = raw_data$paee_error,n = number_of_indices, labels =FALSE)
-	# splits the paee into optimal groups maximizing distance between groups
-	raw_data$index = kmeans(x = raw_data$paee_error, centers = number_of_indices, iter.max = 100)
-	raw_data = raw_data[with(raw_data, order(index)),]
-	return(raw_data)
+    paee_errors = rnorm(n = study_size, mean = 0, sd = measurement_error)
+    raw_data$paee_error = raw_data$paee + paee_errors
+    raw_data$index = cut_number(x = raw_data$paee_error,n = number_of_indices, labels =FALSE)
+    # raw_data$index = kmeans(x = raw_data$paee_error, centers = number_of_indices, iter.max = 100)
+    raw_data = raw_data[with(raw_data, order(index)),]
+    return(raw_data)
 }
 
 createValidationData <- function(val_size, measurement_error, number_of_indices) {
-	validation_data = data.frame(paee =  rnorm(n = val_size, mean = rawMean, sd = rawStdDev))
-	paee_errors = rnorm(n = val_size, mean = 0, sd = measurement_error)
-	validation_data$paee_error = validation_data$paee + paee_errors
-	validation_data$index = cut_number(x = validation_data$paee_error,n = number_of_indices, labels =FALSE)
-	validation_data$index = cut_number(x = validation_data$paee_error,n = number_of_indices, labels =FALSE)
-	return (validation_data)
+    validation_data = data.frame(paee =  rnorm(n = val_size, mean = rawMean, sd = rawStdDev))
+    paee_errors = rnorm(n = val_size, mean = 0, sd = measurement_error)
+    validation_data$paee_error = validation_data$paee + paee_errors
+    validation_data$index = cut_number(x = validation_data$paee_error,n = number_of_indices, labels =FALSE)
+    return (validation_data)
 }
 
 absDiff <- function(x,y){
-	return (abs(x-y))
+    return (abs(x-y))
 }
 
+createMeansList <- function(data, number_of_indices) {
+    meansList = vector(mode="list", length = number_of_indices)
+    for (i in 1:number_of_indices) {
+        meansList[i] = mean(unname(unlist((split(x=data$paee, f= as.factor(data$index)))[i])))
+    }
+    return(meansList)
+}
 
 ###############################################################################
 ########################### DATA AND SETTINGS #################################
@@ -69,4 +74,8 @@ levels = 4
 studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = levels)
 validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = levels )
 
+# per cohort base result vector
+betas <- vector("numeric")
+std_errs <- vector("numeric")
 
+validation_means = createMeansList(validation_data, levels)
