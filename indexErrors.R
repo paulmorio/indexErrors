@@ -69,27 +69,34 @@ createMeansList <- function(data, number_of_indices) {
 ###############################################################################
 
 measureError = 10
-levels = 4
+numLevels = 4
+
+levels = c(2:10)
 
 numTrials = 10
+betasData = data.frame(trial = c(1:numTrials))
 
-betas <- vector("numeric", length = numTrials)
-std_errs <- vector("numeric", length = numTrials)
+for (numLevels in levels) {
+    betas <- vector("numeric", length = numTrials)
+    std_errs <- vector("numeric", length = numTrials)
+    for (i in 1:numTrials) {
+        studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = numLevels)
+        validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = numLevels )
 
-for (i in 1:numTrials) {
-    studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = levels)
-    validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = levels )
+        validation_means = createMeansList(validation_data, numLevels)
 
-    validation_means = createMeansList(validation_data, levels)
+        # find our estimated beta using the index_means
+        studyData$ind_mean <- unlist(lapply(X=studyData$index, FUN=function(index_val){
+            output =  validation_means[index_val]
+            }))
+        reg_ind_mean <- lm(formula=C~ind_mean, data=studyData)
+        estimated_beta = reg_ind_mean$coefficients['ind_mean']
+        standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
 
-    # find our estimated beta using the index_means
-    studyData$ind_mean <- unlist(lapply(X=studyData$index, FUN=function(index_val){
-        output =  validation_means[index_val]
-        }))
-    reg_ind_mean <- lm(formula=C~ind_mean, data=studyData)
-    estimated_beta = reg_ind_mean$coefficients['ind_mean']
-    standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
-
-    betas[i] = estimated_beta
-    std_errs[i] = standardError_reg_ind
+        betas[i] = estimated_beta
+        std_errs[i] = standardError_reg_ind
+    }
+    betasData = cbind(betasData, betas)
 }
+columnnames = c("trial", levels)
+colnames(betasData) = columnnames
