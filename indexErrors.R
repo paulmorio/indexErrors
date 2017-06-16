@@ -79,3 +79,14 @@ betas <- vector("numeric")
 std_errs <- vector("numeric")
 
 validation_means = createMeansList(validation_data, levels)
+
+# find our estimated beta using the index_means
+studyData$ind_mean <- unlist(lapply(X=studyData$index, FUN=function(index_val){
+    output =  validation_means[index_val]
+    }))
+reg_ind_mean <- lm(formula=C~ind_mean, data=studyData)
+estimated_beta = reg_ind_mean$coefficients['ind_mean']
+standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
+
+betas = c(betas, estimated_beta)
+std_errs = c(std_errs, standardError_reg_ind)
