@@ -19,3 +19,15 @@ library(reshape2)
 library(parallel)
 
 # Raw Data Set Properties
+trueBeta = 0.5
+constant = 0
+
+studySize = 10000
+rawMean = 50
+rawStdDev = 20
+
+# Simple creation of the raw data and the related condition C without error
+rawData = data.frame(paee = rnorm(n = studySize, mean = rawMean, sd = rawStdDev))
+rawData$C = (trueBeta*rawData$paee) + constant
+
+
