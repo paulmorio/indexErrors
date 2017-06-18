@@ -71,9 +71,9 @@ createMeansList <- function(data, number_of_indices) {
 measureError = 10
 numLevels = 4
 
-levels = c(2:10)
+levels = c(2:64)
 
-numTrials = 10
+numTrials = 10000
 betasData = data.frame(trial = c(1:numTrials))
 
 for (numLevels in levels) {
@@ -100,3 +100,18 @@ for (numLevels in levels) {
 }
 columnnames = c("trial", levels)
 colnames(betasData) = columnnames
+
+# To display the means of the betas per level
+means_vector = lapply(X = betasData, FUN = mean)
+means_df = data.frame(means_vector)
+colnames(means_df) = columnnames
+means_df = means_df[2:length(levels)]
+
+# To graph the means of the betas per level
+
+
+
+
+
+
+
