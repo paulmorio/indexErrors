@@ -23,7 +23,7 @@ library(stats)
 trueBeta = 0.5
 constant = 0
 
-study_size = 10000
+study_size = 20000
 rawMean = 50
 rawStdDev = 15
 
@@ -62,6 +62,18 @@ createMeansList <- function(data, number_of_indices) {
         meansList[i] = mean(unname(unlist((split(x=data$paee, f= as.factor(data$index)))[i])))
     }
     return(meansList)
+}
+
+probabilisticIndexer <- function(study_means_list, value){
+    # This function provides an index for a value given a list of numbers. The euclidean distance between
+    # the value and each member of the study_means_list is taken and then the value is given a weighted choice
+    # by distance.
+    distances_from_means = lapply(study_means_list, value, FUN = absDiff)
+    distances_normed = distances_from_means/sum(distances_from_means)
+    # to make the smaller distance gain the higher probabilities we will subtract 1 by the normed value
+    probabilities = rep(1, length(distances_normed)) - distances_normed
+    index_val = sample(1:length(study_means_list, size = 1, replace = TRUE, prob = probabilities)
+    return(index_val)
 }
 
 ###############################################################################
