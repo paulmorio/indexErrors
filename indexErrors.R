@@ -23,7 +23,7 @@ library(stats)
 trueBeta = 0.5
 constant = 0
 
-study_size = 20000
+study_size = 10000
 rawMean = 50
 rawStdDev = 15
 
@@ -82,7 +82,7 @@ probabilisticIndexer <- function(study_means_list, value){
     distances_normed = distances_from_means/sum(distances_from_means)
     # to make the smaller distance gain the higher probabilities we will subtract 1 by the normed value
     probabilities = rep(1, length(distances_normed)) - distances_normed
-    index_val = sample(1:length(study_means_list, size = 1, replace = TRUE, prob = probabilities)
+    index_val = sample(1:length(study_means_list), size = 1, replace = TRUE, prob = probabilities)
     return(index_val)
 }
 
@@ -92,19 +92,29 @@ probabilisticIndexer <- function(study_means_list, value){
 
 measureError = 10
 numLevels = 4
+validation_size = 1000
 
-levels = c(2:120)
+levels = c(2:validation_size)
 
-numTrials = 1000
+numTrials = 100
 betasData = data.frame(trial = c(1:numTrials))
 stdErrorData = data.frame(trial = c(1:numTrials))
+
+#Corrected versions of beta and stderror
+lambdasData = data.frame(trial = c(1:numTrials))
+corBetasData = data.frame(trial = c(1:numTrials))
+corStdErrorData = data.frame(trial = c(1:numTrials))
 
 for (numLevels in levels) {
     betas <- vector("numeric", length = numTrials)
     std_errs <- vector("numeric", length = numTrials)
+    corBetas <- vector("numeric", length = numTrials)
+    corStd_errs <- vector("numeric", length = numTrials)
+    lambdas <- vector("numeric", length = numTrials)
+
     for (i in 1:numTrials) {
         studyData = createStudyData(raw_data = rawData, measurement_error = measureError, number_of_indices = numLevels)
-        validation_data = createValidationData(val_size = 200, measurement_error = measureError, number_of_indices = numLevels )
+        validation_data = createValidationData(val_size = validation_size, measurement_error = measureError, number_of_indices = numLevels )
 
         validation_means = createMeansList(validation_data, numLevels)
 
@@ -116,15 +126,42 @@ for (numLevels in levels) {
         estimated_beta = reg_ind_mean$coefficients['ind_mean']
         standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
 
+        # lambda calculation
+        validation_data_cp <- validation_data
+        validation_data_cp = validation_data_cp[with(validation_data_cp, order(index)),]
+        validation_data_cp$paee_means_bt <- unlist(lapply(X=validation_data_cp$index, FUN=function(index_val){
+            output =  validation_means[index_val]
+            }))
+        reg_lambda <- lm(formula =paee~paee_means_bt, data=validation_data_cp)
+
+        # correction
+        var_lambda = (sqrt(validation_size) * summary(reg_lambda)$coefficients["paee_means_bt","Std. Error"])^2
+        var_Beta = (sqrt(validation_size) * summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"])^2
+        lambda_pure = unlist(unname(reg_lambda$coefficients["paee_means_bt"]))
+        beta_lambda_div_sq = (unname(unlist(reg_ind_mean$coefficients["ind_mean"]/(reg_lambda$coefficients["paee_means_bt"])^2)))^2
+        delta_variance = (var_Beta / (lambda_pure)^2) + beta_lambda_div_sq * var_lambda
+        delta_stdError = sqrt(delta_variance)/sqrt(validation_size) 
+
         betas[i] = estimated_beta
         std_errs[i] = standardError_reg_ind
+
+        lambdas[i] = lambda_pure
+        corBetas[i] = estimated_beta / lambda_pure
+        corStd_errs[i] = delta_stdError
     }
+
     betasData = cbind(betasData, betas)
     stdErrorData = cbind(stdErrorData, std_errs)
+    lambdasData = cbind(lambdasData, lambdas)
+    corBetasData = cbind(corBetasData, corBetas)
+    corStdErrorData = cbind(corStdErrorData, corStd_errs)
 }
 columnnames = c("trial", levels)
 colnames(betasData) = columnnames
 colnames(stdErrorData) = columnnames
+colnames(corBetasData) = columnnames
+colnames(corStdErrorData) = columnnames
+colnames(lambdasData) = columnnames
 
 # To display the means of the betas per level
 means_vector = lapply(X = betasData, FUN = mean)
@@ -150,6 +187,43 @@ stdErrorMeans_y = stdErrorMeans[2:length(stdErrorMeans)]
 plot(x = xs, y = stdErrorMeans_y)
 lines(lowess(xs,stdErrorMeans_y), col="blue") # lowess line (x,y)
 
+
+## Corrected Versions
+# To display the means of the betas per level
+lambdas_vector = lapply(X = lambdasData, FUN = mean)
+lambdas_df = data.frame(lambdas_vector)
+colnames(lambdas_df) = columnnames
+lambdas_df = lambdas_df[2:length(levels)+1]
+
+# To graph the means of the betas per level
+lambdas_vector_y = lambdas_vector[2:length(lambdas_vector)]
+xs = levels
+plot(x = xs, y = lambdas_vector_y)
+lines(lowess(xs,lambdas_vector_y), col="blue") # lowess line (x,y)
+
+# To display the means of the betas per level
+cormeans_vector = lapply(X = corBetasData, FUN = mean)
+cormeans_df = data.frame(cormeans_vector)
+colnames(cormeans_df) = columnnames
+cormeans_df = cormeans_df[2:length(levels)+1]
+
+# To graph the means of the betas per level
+cormeans_vector_y = cormeans_vector[2:length(cormeans_vector)]
+xs = levels
+plot(x = xs, y = cormeans_vector_y)
+lines(lowess(xs,cormeans_vector_y), col="blue") # lowess line (x,y)
+
+
+# To display the stderrors of the betas per level
+corstdErrorMeans = lapply(X =corStdErrorData, FUN = mean)
+corstdError_df = data.frame(corstdErrorMeans)
+colnames(corstdError_df) = columnnames
+corstdError_df = corstdError_df[2:length(levels)+1]
+
+# To graph the stderrors of the betas per level
+corstdErrorMeans_y = corstdErrorMeans[2:length(corstdErrorMeans)]
+plot(x = xs, y = corstdErrorMeans_y)
+lines(lowess(xs,corstdErrorMeans_y), col="blue") # lowess line (x,y)
 
 
 
