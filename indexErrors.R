@@ -71,10 +71,11 @@ createMeansList <- function(data, number_of_indices) {
 measureError = 10
 numLevels = 4
 
-levels = c(2:64)
+levels = c(2:120)
 
-numTrials = 10000
+numTrials = 1000
 betasData = data.frame(trial = c(1:numTrials))
+stdErrorData = data.frame(trial = c(1:numTrials))
 
 for (numLevels in levels) {
     betas <- vector("numeric", length = numTrials)
@@ -97,18 +98,35 @@ for (numLevels in levels) {
         std_errs[i] = standardError_reg_ind
     }
     betasData = cbind(betasData, betas)
+    stdErrorData = cbind(stdErrorData, std_errs)
 }
 columnnames = c("trial", levels)
 colnames(betasData) = columnnames
+colnames(stdErrorData) = columnnames
 
 # To display the means of the betas per level
 means_vector = lapply(X = betasData, FUN = mean)
 means_df = data.frame(means_vector)
 colnames(means_df) = columnnames
-means_df = means_df[2:length(levels)]
+means_df = means_df[2:length(levels)+1]
 
 # To graph the means of the betas per level
+means_vector_y = means_vector[2:length(means_vector)]
+xs = levels
+plot(x = xs, y = means_vector_y)
+lines(lowess(xs,means_vector_y), col="blue") # lowess line (x,y)
 
+
+# To display the stderrors of the betas per level
+stdErrorMeans = lapply(X = stdErrorData, FUN = mean)
+stdError_df = data.frame(stdErrorMeans)
+colnames(stdError_df) = columnnames
+stdError_df = stdError_df[2:length(levels)+1]
+
+# To graph the stderrors of the betas per level
+stdErrorMeans_y = stdErrorMeans[2:length(stdErrorMeans)]
+plot(x = xs, y = stdErrorMeans_y)
+lines(lowess(xs,stdErrorMeans_y), col="blue") # lowess line (x,y)
 
 
 
