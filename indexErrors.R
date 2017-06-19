@@ -52,6 +52,16 @@ createValidationData <- function(val_size, measurement_error, number_of_indices)
     return (validation_data)
 }
 
+createValidationDataEuclidean <- function(val_size, measurement_error, number_of_indices, study_means_list) {
+    validation_data = data.frame(paee =  rnorm(n = val_size, mean = rawMean, sd = rawStdDev))
+    paee_errors = rnorm(n = val_size, mean = 0, sd = measurement_error)
+    validation_data$paee_error = validation_data$paee + paee_errors
+    validation_data$index = unname(unlist(lapply(validation_data$paee_error, FUN = function(x) {
+            out = probabilisticIndexer(study_means_list, x)
+        })))
+    return (validation_data)
+}
+
 absDiff <- function(x,y){
     return (abs(x-y))
 }
