@@ -171,7 +171,7 @@ means_df = means_df[2:length(levels)+1]
 
 # To graph the means of the betas per level
 means_vector_y = means_vector[2:length(means_vector)]
-xs = levels
+xs = 1:(length(means_vector_y))
 plot(x = xs, y = means_vector_y)
 lines(lowess(xs,means_vector_y), col="blue") # lowess line (x,y)
 
@@ -197,7 +197,6 @@ lambdas_df = lambdas_df[2:length(levels)+1]
 
 # To graph the means of the betas per level
 lambdas_vector_y = lambdas_vector[2:length(lambdas_vector)]
-xs = levels
 plot(x = xs, y = lambdas_vector_y)
 lines(lowess(xs,lambdas_vector_y), col="blue") # lowess line (x,y)
 
@@ -209,7 +208,6 @@ cormeans_df = cormeans_df[2:length(levels)+1]
 
 # To graph the means of the betas per level
 cormeans_vector_y = cormeans_vector[2:length(cormeans_vector)]
-xs = levels
 plot(x = xs, y = cormeans_vector_y)
 lines(lowess(xs,cormeans_vector_y), col="blue") # lowess line (x,y)
 
