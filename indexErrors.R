@@ -127,7 +127,7 @@ for (numLevels in levels) {
         standardError_reg_ind = summary(reg_ind_mean)$coefficients["ind_mean","Std. Error"]
 
         # lambda calculation
-        validation_data_cp <- validation_data
+        validation_data_cp <- createValidationData(val_size = validation_size, measurement_error = measureError, number_of_indices = numLevels )
         validation_data_cp = validation_data_cp[with(validation_data_cp, order(index)),]
         validation_data_cp$paee_means_bt <- unlist(lapply(X=validation_data_cp$index, FUN=function(index_val){
             output =  validation_means[index_val]
